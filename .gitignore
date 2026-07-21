@@ -1,0 +1,14 @@
+.build/
+dist/
+.swiftpm/
+*.xcuserstate
+.DS_Store
+__pycache__/
+*.pyc
+.idea
+# Local project-control records are not part of the public source release.
+docs/tasks/
+docs/reports/
+docs/reviews/
+docs/releases/
+AGENTS.md

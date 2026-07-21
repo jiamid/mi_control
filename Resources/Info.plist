@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>zh_CN</string>
+	<key>CFBundleDisplayName</key>
+	<string>MiControlApp</string>
+	<key>CFBundleExecutable</key>
+	<string>MiControlApp</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.jiamid.MiControlApp</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>MiControlApp</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.2.8</string>
+	<key>CFBundleVersion</key>
+	<string>10</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>11.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>连接小米蓝牙遥控器 2 Pro，接收按键与语音数据。</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>GPL-3.0-only</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>将小米遥控器麦克风的语音转为文字，并填入当前输入框。</string>
+</dict>
+</plist>

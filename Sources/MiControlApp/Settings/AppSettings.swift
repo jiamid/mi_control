@@ -1,16 +1,35 @@
 import Combine
 import Foundation
 
+enum SpeechDestination: String, CaseIterable, Identifiable {
+    case frontmost
+    case codexDraft
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .frontmost: return "当前输入框"
+        case .codexDraft: return "Codex 草稿"
+        }
+    }
+}
+
 final class AppSettings: ObservableObject {
+    static let defaultsSuiteName = "com.jiamid.MiControlApp"
+    static let settingsChangedNotification = Notification.Name("com.jiamid.MiControlApp.settingsChanged")
+
     private enum Keys {
         static let customMappingEnabled = "customMappingEnabled"
         static let legacyExclusiveHID = "exclusiveHID"
         static let buttonBindings = "buttonBindings"
         static let peripheralIdentifier = "peripheralIdentifier"
         static let speechLocale = "speechLocale"
+        static let speechDestination = "speechDestination"
     }
 
     private let defaults: UserDefaults
+    private var defaultsObserver: NSObjectProtocol?
 
     @Published var customMappingEnabled: Bool {
         didSet { defaults.set(customMappingEnabled, forKey: Keys.customMappingEnabled) }
@@ -18,6 +37,10 @@ final class AppSettings: ObservableObject {
 
     @Published var speechLocale: String {
         didSet { defaults.set(speechLocale, forKey: Keys.speechLocale) }
+    }
+
+    @Published var speechDestination: SpeechDestination {
+        didSet { defaults.set(speechDestination.rawValue, forKey: Keys.speechDestination) }
     }
 
     @Published var buttonBindings: [RemoteButton: ButtonAction] {
@@ -42,6 +65,8 @@ final class AppSettings: ObservableObject {
             customMappingEnabled = defaults.bool(forKey: Keys.legacyExclusiveHID)
         }
         speechLocale = defaults.string(forKey: Keys.speechLocale) ?? "zh-CN"
+        speechDestination = defaults.string(forKey: Keys.speechDestination)
+            .flatMap(SpeechDestination.init(rawValue:)) ?? .frontmost
 
         if
             let data = defaults.data(forKey: Keys.buttonBindings),
@@ -54,6 +79,20 @@ final class AppSettings: ObservableObject {
             ) { _, saved in saved }
         } else {
             buttonBindings = Self.defaultBindings
+        }
+
+        defaultsObserver = DistributedNotificationCenter.default().addObserver(
+            forName: Self.settingsChangedNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.reloadFromDefaults()
+        }
+    }
+
+    deinit {
+        if let defaultsObserver {
+            DistributedNotificationCenter.default().removeObserver(defaultsObserver)
         }
     }
 
@@ -73,6 +112,25 @@ final class AppSettings: ObservableObject {
         let raw = Dictionary(uniqueKeysWithValues: buttonBindings.map { ($0.key.rawValue, $0.value) })
         if let data = try? JSONEncoder().encode(raw) {
             defaults.set(data, forKey: Keys.buttonBindings)
+        }
+    }
+
+    private func reloadFromDefaults() {
+        if defaults.object(forKey: Keys.customMappingEnabled) != nil {
+            customMappingEnabled = defaults.bool(forKey: Keys.customMappingEnabled)
+        }
+        speechLocale = defaults.string(forKey: Keys.speechLocale) ?? "zh-CN"
+        speechDestination = defaults.string(forKey: Keys.speechDestination)
+            .flatMap(SpeechDestination.init(rawValue:)) ?? .frontmost
+        if
+            let data = defaults.data(forKey: Keys.buttonBindings),
+            let decoded = try? JSONDecoder().decode([String: ButtonAction].self, from: data)
+        {
+            buttonBindings = Self.defaultBindings.merging(
+                Dictionary(uniqueKeysWithValues: decoded.compactMap { key, value in
+                    RemoteButton(rawValue: key).map { ($0, value) }
+                })
+            ) { _, saved in saved }
         }
     }
 

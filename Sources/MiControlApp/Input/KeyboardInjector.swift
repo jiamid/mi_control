@@ -5,6 +5,7 @@ import Foundation
 
 enum KeyboardInjector {
     static let syntheticEventMarker: Int64 = 0x5849_414F
+    static let codexBundleID = "com.openai.codex"
     private static let macroStepInterval: TimeInterval = 0.05
     private static var macroPlaybackGeneration = 0
 
@@ -28,11 +29,15 @@ enum KeyboardInjector {
         if case let .openApp(bundleID) = action {
             return openApplication(bundleID: bundleID)
         }
+        if case let .codex(codexAction) = action {
+            sendCodexAction(codexAction)
+            return true
+        }
 
         guard isAccessibilityTrusted else { return false }
 
         switch action {
-        case .disabled, .openApp:
+        case .disabled, .openApp, .codex:
             return true
         case .escape:
             postKey(code: 53)
@@ -71,6 +76,23 @@ enum KeyboardInjector {
     }
 
     @discardableResult
+    static func sendCodexPrompt(_ text: String, submit: Bool) -> Bool {
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return false }
+        guard openApplication(bundleID: codexBundleID) else { return false }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            _ = pasteText(value)
+            if submit {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+                    postKey(code: 36)
+                }
+            }
+        }
+        AppLogger.shared.write("CODEX prompt chars=\(value.count) submit=\(submit)")
+        return true
+    }
+
+    @discardableResult
     static func openApplication(bundleID: String) -> Bool {
         let id = bundleID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !id.isEmpty else {
@@ -91,6 +113,25 @@ enum KeyboardInjector {
             }
         }
         return true
+    }
+
+    private static func sendCodexAction(_ action: CodexRemoteAction) {
+        _ = openApplication(bundleID: codexBundleID)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            switch action {
+            case .activate:
+                break
+            case .submit:
+                postKey(code: 36)
+            case .stop:
+                postKey(code: 53)
+            case .commandPalette:
+                postKey(code: 40, flags: .maskCommand)
+            case .newTask:
+                postKey(code: 45, flags: .maskCommand)
+            }
+            AppLogger.shared.write("CODEX action=\(action.rawValue)")
+        }
     }
 
     private static func playMacro(_ steps: [MacroStep]) {

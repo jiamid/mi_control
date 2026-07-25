@@ -41,6 +41,12 @@ struct SettingsView: View {
                     statusLine("蓝牙", model.connectionStatus)
                     statusLine("语音", model.isStreaming ? "进行中" : "待机")
                     statusLine("触发", model.voiceShortcutStatus)
+                    Picker("语音目标", selection: $settings.speechDestination) {
+                        ForEach(SpeechDestination.allCases) { destination in
+                            Text(destination.displayName).tag(destination)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                     Divider().opacity(0.35)
                     Button("立即重新连接") { model.reconnect() }
                         .controlSize(.regular)

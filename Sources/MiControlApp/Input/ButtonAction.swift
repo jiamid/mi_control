@@ -11,6 +11,26 @@ struct MacroStep: Equatable, Hashable, Codable {
     }
 }
 
+enum CodexRemoteAction: String, Equatable, Hashable, Codable, CaseIterable, Identifiable {
+    case activate
+    case submit
+    case stop
+    case commandPalette
+    case newTask
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .activate: return "激活 Codex"
+        case .submit: return "Codex 提交"
+        case .stop: return "Codex 停止 / 取消"
+        case .commandPalette: return "Codex 命令面板"
+        case .newTask: return "Codex 新任务"
+        }
+    }
+}
+
 /// 遥控器按键映射目标。支持旧预设、单键自定义，以及短宏（按键序列）。
 enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
     case disabled
@@ -34,6 +54,8 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
     case macro([MacroStep])
     /// 打开指定 App（按 Bundle Identifier）
     case openApp(bundleID: String)
+    /// 操作 Codex 桌面应用
+    case codex(CodexRemoteAction)
 
     static let macroStepLimit = 8
 
@@ -45,6 +67,8 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
             return "macro:" + steps.map { "\($0.keyCode)-\($0.modifiers)" }.joined(separator: ".")
         case .openApp(let bundleID):
             return "openApp:\(bundleID)"
+        case .codex(let action):
+            return "codex:\(action.rawValue)"
         default:
             return presetRawValue ?? "unknown"
         }
@@ -67,7 +91,7 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
         case .volumeDown: return "volumeDown"
         case .volumeMute: return "volumeMute"
         case .playPause: return "playPause"
-        case .custom, .macro, .openApp: return nil
+        case .custom, .macro, .openApp, .codex: return nil
         }
     }
 
@@ -89,6 +113,11 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
             .volumeDown,
             .volumeMute,
             .playPause,
+            .codex(.activate),
+            .codex(.submit),
+            .codex(.stop),
+            .codex(.commandPalette),
+            .codex(.newTask),
         ]
     }
 
@@ -107,6 +136,11 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
         return false
     }
 
+    var isCodexAction: Bool {
+        if case .codex = self { return true }
+        return false
+    }
+
     /// 可「重录」的用户动作（单键或宏）
     var isUserRecorded: Bool { isCustom || isMacro }
 
@@ -116,7 +150,7 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
     }
 
     /// 长按时不应连续触发的动作。
-    var suppressesKeyRepeat: Bool { isDisabled || isMacro || isOpenApp }
+    var suppressesKeyRepeat: Bool { isDisabled || isMacro || isOpenApp || isCodexAction }
 
     var displayName: String {
         switch self {
@@ -143,6 +177,8 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
             return steps.count > 1 ? "宏·\(joined)" : joined
         case let .openApp(bundleID):
             return "打开 \(Self.appDisplayName(bundleID: bundleID))"
+        case .codex(let action):
+            return action.displayName
         }
     }
 
@@ -218,6 +254,9 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
                 )
             }
             self = .openApp(bundleID: bundleID)
+        case "codex":
+            let action = try container.decode(CodexRemoteAction.self, forKey: .action)
+            self = .codex(action)
         default:
             throw DecodingError.dataCorruptedError(
                 forKey: .kind,
@@ -245,6 +284,9 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
         case let .openApp(bundleID):
             try container.encode("openApp", forKey: .kind)
             try container.encode(bundleID, forKey: .bundleID)
+        case let .codex(action):
+            try container.encode("codex", forKey: .kind)
+            try container.encode(action, forKey: .action)
         default:
             break
         }
@@ -256,5 +298,6 @@ enum ButtonAction: Equatable, Hashable, Codable, Identifiable {
         case modifiers
         case steps
         case bundleID
+        case action
     }
 }

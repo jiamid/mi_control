@@ -107,6 +107,16 @@ struct RemoteButtonsTests {
         #expect(action.displayName.hasPrefix("打开 "))
     }
 
+    @Test func codexShortcutRoundTrips() throws {
+        let action = ButtonAction.codex(.submit)
+        let data = try JSONEncoder().encode(["ok": action])
+        let decoded = try JSONDecoder().decode([String: ButtonAction].self, from: data)
+        #expect(decoded["ok"] == action)
+        #expect(action.isCodexAction)
+        #expect(action.suppressesKeyRepeat)
+        #expect(action.displayName == "Codex 提交")
+    }
+
     @Test func customShortcutRoundTrips() throws {
         let action = ButtonAction.custom(
             keyCode: 35,
@@ -135,6 +145,17 @@ struct RemoteButtonsTests {
 
         #expect(settings.action(for: .back) == .disabled)
         #expect(settings.action(for: .up) == .arrowUp)
+    }
+
+    @Test func speechDestinationDefaultsToFrontmostAndAcceptsCodexDraft() throws {
+        let suiteName = "MiControlAppTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        #expect(AppSettings(defaults: defaults).speechDestination == .frontmost)
+
+        defaults.set("codexDraft", forKey: "speechDestination")
+        #expect(AppSettings(defaults: defaults).speechDestination == .codexDraft)
     }
 
     @Test func migratesLegacyExclusiveToggleToCustomMappingToggle() throws {

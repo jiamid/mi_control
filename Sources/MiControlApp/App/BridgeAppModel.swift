@@ -32,6 +32,7 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
     private var permissionRetryTimer: Timer?
     private var lastHIDRetryAt = Date.distantPast
     private var didPresentPermissionAlert = false
+    private var settingsObserver: NSObjectProtocol?
 
     func startIfNeeded() {
         guard !started else { return }
@@ -83,6 +84,15 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
         ) { [weak self] _ in
             self?.stop()
         }
+        settingsObserver = DistributedNotificationCenter.default().addObserver(
+            forName: AppSettings.settingsChangedNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, self.started else { return }
+            self.applyHIDSettings()
+            self.updateVoiceModeStatus()
+        }
         DispatchQueue.main.async { [weak self] in
             self?.presentPermissionAlertIfNeeded()
         }
@@ -103,6 +113,10 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
         if let terminationObserver {
             NotificationCenter.default.removeObserver(terminationObserver)
             self.terminationObserver = nil
+        }
+        if let settingsObserver {
+            DistributedNotificationCenter.default().removeObserver(settingsObserver)
+            self.settingsObserver = nil
         }
         started = false
         AppLogger.shared.write("APP STOP")
@@ -358,11 +372,22 @@ final class BridgeAppModel: ObservableObject, XiaomiBluetoothBridgeDelegate {
                 self.speechOverlay.hide(after: 0.35)
                 return
             }
-            let pasted = KeyboardInjector.pasteText(trimmed)
-            if pasted {
-                self.speechStatus = "已粘贴：\(trimmed.prefix(40))"
-                self.voiceShortcutStatus = "已粘贴识别文字"
-                AppLogger.shared.write("SPEECH pasted chars=\(trimmed.count)")
+            let delivered: Bool
+            switch self.settings.speechDestination {
+            case .frontmost:
+                delivered = KeyboardInjector.pasteText(trimmed)
+            case .codexDraft:
+                delivered = KeyboardInjector.sendCodexPrompt(trimmed, submit: false)
+            }
+
+            if delivered {
+                self.speechStatus = "已发送：\(trimmed.prefix(40))"
+                self.voiceShortcutStatus = self.settings.speechDestination == .frontmost
+                    ? "已粘贴识别文字"
+                    : "已发送到 Codex"
+                AppLogger.shared.write(
+                    "SPEECH delivered destination=\(self.settings.speechDestination.rawValue) chars=\(trimmed.count)"
+                )
             } else {
                 self.speechStatus = "已复制，请点 Agent 输入框后按 ⌘V：\(trimmed.prefix(28))"
                 self.voiceShortcutStatus = "粘贴失败：请开启辅助功能后重试"

@@ -57,7 +57,7 @@ final class SpeechOverlayController {
 
         let view = SpeechOverlayView(model: model)
         let host = NSHostingView(rootView: view)
-        host.frame = NSRect(x: 0, y: 0, width: 420, height: 148)
+        host.frame = NSRect(x: 0, y: 0, width: 440, height: 164)
 
         let panel = NSPanel(
             contentRect: host.frame,
@@ -114,21 +114,19 @@ struct SpeechOverlayView: View {
     var body: some View {
         VStack(spacing: 12) {
             SoundWaveBars(barCount: barCount, level: model.audioLevel, time: tick)
-                .frame(height: 40)
+                .frame(height: 38)
 
             Text(displayText)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 17, weight: .medium))
                 .foregroundColor(.white)
-                .shadow(color: .black.opacity(0.55), radius: 2, y: 1)
-                .shadow(color: .black.opacity(0.35), radius: 8, y: 2)
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
                 .frame(maxWidth: .infinity, minHeight: 40, alignment: .top)
                 .animation(.easeOut(duration: 0.12), value: model.transcript)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .frame(width: 420)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .frame(width: 440, height: 164)
         .opacity(model.isVisible ? 1 : 0)
         .scaleEffect(model.isVisible ? 1 : 0.98)
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: model.isVisible)
@@ -160,14 +158,14 @@ private struct SoundWaveBars: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white,
-                                Color(red: 0.55, green: 0.82, blue: 1.0),
+                                Color(red: 0.0, green: 1.0, blue: 0.88),
+                                Color(red: 0.74, green: 0.18, blue: 1.0),
+                                Color(red: 1.0, green: 0.16, blue: 0.63),
                             ],
                             startPoint: .bottom,
                             endPoint: .top
                         )
                     )
-                    .shadow(color: .black.opacity(0.35), radius: 1.5, y: 1)
                     .frame(width: 5, height: barHeight(for: index))
             }
         }

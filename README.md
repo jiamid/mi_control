@@ -8,6 +8,27 @@ macOS 菜单栏应用：连接 **小米蓝牙遥控器 2 Pro（RC003）**，支�
 
 仅支持 macOS 11+，仅支持 RC003。
 
+## 下载
+
+当前版本 **0.3.0**：[MiControlApp-0.3.0.dmg](https://github.com/jiamid/mi_control/releases/download/v0.3.0/MiControlApp-0.3.0.dmg)
+
+全部版本见 [Releases](https://github.com/jiamid/mi_control/releases)。
+
+这个安装包没有 Apple 开发者签名。从浏览器下载后，macOS 会拦截第一次打开：
+
+1. 打开 DMG，把 `MiControlApp.app` 拖进「应用程序」。
+2. 双击一次。若提示无法验证开发者或「已损坏」，点「完成」，不要移到废纸篓。
+3. 打开「系统设置 → 隐私与安全性」，拉到最下面，点「仍要打开」，再输入开机密码。
+
+若没有「仍要打开」，或仍然提示已损坏，在终端执行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/MiControlApp.app
+open /Applications/MiControlApp.app
+```
+
+每次安装新的未签名版本后，辅助功能和输入监控通常需要重新勾选。
+
 ## 构建与安装
 
 ```bash
